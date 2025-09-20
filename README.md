@@ -96,8 +96,3 @@ npm start
 7. Monitor the processing status
 8. Download and view the final rendered video
 
-## Notes
-
-- For demo purposes, you can use the example videos, images and clips provided in the Google Drive link from the assignment description.
-- The backend needs to have write permissions to create upload/results/temp directories.
-- When testing on a physical device, make sure your device and development machine are on the same network, and use the correct IP address in the config file.

@@ -2,6 +2,16 @@
 
 A full-stack video editing application where users can upload videos, add overlays (text, images, video clips), and render the edited video on the backend.
 
+
+# App Images
+
+<img width="15688" height="6953" alt="Frame 592" src="https://github.com/user-attachments/assets/df5ed0d9-767c-4d26-a51c-a48464aa5e2d" />
+
+
+# Video link
+
+https://screenrec.com/share/38ghBLHufw
+
 ## Project Structure
 
 The project is divided into two main parts:

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  PanResponder, // Add this import
 } from 'react-native';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
@@ -35,6 +36,7 @@ export default function VideoEditorScreen() {
   const [newOverlayTiming, setNewOverlayTiming] = useState({ start: 0, end: 5 });
   const [isUploading, setIsUploading] = useState(false);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false); // Add this state
 
   // Handle video playback position changes
   useEffect(() => {
@@ -200,6 +202,40 @@ export default function VideoEditorScreen() {
     }
   };
 
+  // Create a function to create pan responders for overlays
+  const createPanResponder = (overlayId: string) => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // When the user starts dragging, select this overlay
+        setSelectedOverlayId(overlayId);
+        setIsDragging(true);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Update the overlay position as the user drags
+        const { dx, dy } = gestureState;
+        
+        setOverlays(prevOverlays =>
+          prevOverlays.map(overlay =>
+            overlay.id === overlayId
+              ? {
+                  ...overlay,
+                  position: {
+                    x: Math.max(0, Math.min(videoSize.width - overlay.size.width, overlay.position.x + dx)),
+                    y: Math.max(0, Math.min(videoSize.height - overlay.size.height, overlay.position.y + dy)),
+                  },
+                }
+              : overlay
+          )
+        );
+      },
+      onPanResponderRelease: () => {
+        // When the user stops dragging
+        setIsDragging(false);
+      },
+    });
+  };
+
   if (!videoUri) {
     return (
       <View style={styles.container}>
@@ -222,40 +258,47 @@ export default function VideoEditorScreen() {
         />
         
         {/* Overlays on top of video */}
-        {overlays.map((overlay) => (
-          <View
-            key={overlay.id}
-            style={[
-              styles.overlay,
-              {
-                left: overlay.position.x,
-                top: overlay.position.y,
-                width: overlay.size.width,
-                height: overlay.size.height,
-                borderColor: selectedOverlayId === overlay.id ? '#00ff00' : 'transparent',
-                borderWidth: selectedOverlayId === overlay.id ? 2 : 0,
-                display: (currentTime >= overlay.startTime && currentTime <= overlay.endTime) 
-                  ? 'flex' : 'none',
-              },
-            ]}
-            onTouchEnd={() => selectOverlay(overlay.id)}
-          >
-            {overlay.type === 'text' ? (
-              <Text style={styles.overlayText}>{overlay.content}</Text>
-            ) : overlay.type === 'image' ? (
-              <Image source={{ uri: overlay.content }} style={styles.overlayMedia} />
-            ) : (
-              <Video
-                source={{ uri: overlay.content }}
-                style={styles.overlayMedia}
-                resizeMode="cover"
-                shouldPlay
-                isLooping
-                isMuted
-              />
-            )}
-          </View>
-        ))}
+        {overlays.map((overlay) => {
+          // Create a pan responder for each overlay
+          const panResponder = createPanResponder(overlay.id);
+          
+          return (
+            <View
+              key={overlay.id}
+              {...panResponder.panHandlers} // Apply pan handlers here
+              style={[
+                styles.overlay,
+                {
+                  left: overlay.position.x,
+                  top: overlay.position.y,
+                  width: overlay.size.width,
+                  height: overlay.size.height,
+                  borderColor: selectedOverlayId === overlay.id ? '#00ff00' : 'transparent',
+                  borderWidth: selectedOverlayId === overlay.id ? 2 : 0,
+                  display: (currentTime >= overlay.startTime && currentTime <= overlay.endTime) 
+                    ? 'flex' : 'none',
+                },
+              ]}
+              // Remove this as we're now using the pan responder
+              // onTouchEnd={() => selectOverlay(overlay.id)}
+            >
+              {overlay.type === 'text' ? (
+                <Text style={styles.overlayText}>{overlay.content}</Text>
+              ) : overlay.type === 'image' ? (
+                <Image source={{ uri: overlay.content }} style={styles.overlayMedia} />
+              ) : (
+                <Video
+                  source={{ uri: overlay.content }}
+                  style={styles.overlayMedia}
+                  resizeMode="cover"
+                  shouldPlay
+                  isLooping
+                  isMuted
+                />
+              )}
+            </View>
+          );
+        })}
       </View>
 
       {/* Timeline slider */}
